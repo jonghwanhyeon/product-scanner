@@ -1,7 +1,6 @@
 import logging
 import os
 
-import config
 
 from scrapy.crawler import CrawlerProcess
 from spiders import ImbakSpider, ThirtyMallSpider, CheeseQueenSpider, CheesePartySpider, ChooseCheeseSpider
@@ -33,4 +32,4 @@ for spider in spiders:
     for parameter in config.spiders.get(spider.name, []):
         process.crawl(spider, **parameter)
 
-process.start()
+process.start()from productscanner import base_path, config

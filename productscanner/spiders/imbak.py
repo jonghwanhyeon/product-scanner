@@ -3,7 +3,7 @@ import re
 from urllib.parse import parse_qs, urlparse
 
 from . import ShopSpider
-from utils import extract_with_css, only_digit
+from ..utils import extract_with_css, only_digit
 
 class ImbakSpider(ShopSpider):
     name = 'imbak'

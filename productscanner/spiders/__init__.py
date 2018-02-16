@@ -40,9 +40,3 @@ class ShopSpider(scrapy.Spider):
         components[4] = urlencode(merged_query, doseq=True) # 4: query
 
         return urlunparse(components)
-
-from .imbak import ImbakSpider
-from .thirtymall import ThirtyMallSpider
-from .cheesequeen import CheeseQueenSpider
-from .cheeseparty import CheesePartySpider
-from .choosecheese import ChooseCheeseSpider

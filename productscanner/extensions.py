@@ -1,8 +1,7 @@
 import logging
 import scrapy
 
-import config
-import notification
+from . import config, notification
 
 class NotifyExceptionExtension:
     def __init__(self):

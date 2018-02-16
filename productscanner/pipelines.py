@@ -6,16 +6,13 @@ import re
 import requests
 import scrapy
 
-import config
-import notification
-
 from functools import partial
 
-os.makedirs('seen/', exist_ok=True)
-seen_filename_template = os.path.join(
-    'seen',
-    '{name}.pickle'
-)
+from . import base_path, config, notification
+
+seen_directory = os.path.join(base_path, 'seen')
+os.makedirs(seen_directory, exist_ok=True)
+seen_filename_template = os.path.join(seen_directory, '{name}.pickle')
 
 without_whitespace = partial(re.sub, r'\s', '')
 
