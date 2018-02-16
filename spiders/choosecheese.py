@@ -1,12 +1,15 @@
 import re
 
-from urllib.parse import parse_qs, urlencode, urlparse
+from urllib.parse import parse_qs, urlparse
+
 from . import ShopSpider
+from utils import extract_with_css, only_digit
 
 class ChooseCheeseSpider(ShopSpider):
     name = 'choosecheese'
     allowed_domains = ['choosecheese.kr']
 
+    start_url = 'http://choosecheese.kr/shop/shopbrand.html?type=X'
     parameters = ['xcode', 'mcode']
 
     def parse(self, response):
@@ -21,37 +24,27 @@ class ChooseCheeseSpider(ShopSpider):
             raise ValueError('Failed to find products')
 
         for product in products:
-            if self.extract_with_css(product, 'font[color="red"]::text') == '(품절)':
+            if extract_with_css(product, 'font[color="red"]::text') == '(품절)':
                 continue
 
-            url = response.urljoin(self.extract_with_css(product, 'td.Brand_prodtHeight a::attr(href)'))
+            url = response.urljoin(extract_with_css(product, 'td.Brand_prodtHeight a::attr(href)'))
             query = parse_qs(urlparse(url).query)
 
-            customer_price = self.extract_with_css(product, 'font.brandconprice span::text')
+            customer_price = extract_with_css(product, 'font.brandconprice span::text')
             if not customer_price:
                 continue
-            customer_price = int(re.sub(r'[^\d]', '', customer_price))
+            customer_price = int(only_digit(customer_price))
 
-            current_price = self.extract_with_css(product, 'span.brandprice span::text')
+            current_price = extract_with_css(product, 'span.brandprice span::text')
             if not current_price:
                 continue
-            current_price = int(re.sub(r'[^\d]', '', current_price))
+            current_price = int(only_digit(current_price))
 
             yield {
                 'url': url,
                 'id': query.get('branduid', [None])[0],
-                'image_url': response.urljoin(self.extract_with_css(product, 'td.Brand_prodtHeight img::attr(src)')),
-                'name': self.extract_with_css(product, 'a font.brandbrandname::text'),
+                'image_url': response.urljoin(extract_with_css(product, 'td.Brand_prodtHeight img::attr(src)')),
+                'name': extract_with_css(product, 'a font.brandbrandname::text'),
                 'price': current_price,
                 'discount_rate': (customer_price - current_price) / customer_price,
             }
-
-    def url_of(self, xcode, mcode):
-        return '{list_url}?{query}'.format(
-            list_url='http://choosecheese.kr/shop/shopbrand.html',
-            query=urlencode({
-                'xcode': xcode,
-                'mcode': mcode,
-                'type': 'X',
-            })
-        )

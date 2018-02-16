@@ -1,12 +1,15 @@
 import re
 
-from urllib.parse import parse_qs, urlencode, urlparse
+from urllib.parse import parse_qs, urlparse
+
 from . import ShopSpider
+from utils import extract_with_css, only_digit
 
 class ThirtyMallSpider(ShopSpider):
     name = 'thirtymall'
     allowed_domains = ['thirtymall.com']
 
+    start_url = 'http://www.thirtymall.com/goods/catalog?perpage=100'
     parameters = ['code']
 
     def parse(self, response):
@@ -21,33 +24,24 @@ class ThirtyMallSpider(ShopSpider):
             raise ValueError('Failed to find products')
 
         for product in products:
-            url = response.urljoin(self.extract_with_css(product, 'p.proTitle a::attr(href)'))
+            url = response.urljoin(extract_with_css(product, 'p.proTitle a::attr(href)'))
             query = parse_qs(urlparse(url).query)
 
-            price = self.extract_with_css(product, 'div.proPrice span.price02::text')
+            price = extract_with_css(product, 'div.proPrice span.price02::text')
             if not price:
                 continue
-            price = int(re.sub(r'[^\d]', '', price))
+            price = int(only_digit(price))
 
-            discount_rate = self.extract_with_css(product, 'div.proPrice span.price03::text')
+            discount_rate = extract_with_css(product, 'div.proPrice span.price03::text')
             if not discount_rate:
                 continue
-            discount_rate = int(re.sub(r'[^\d]', '', discount_rate)) / 100
+            discount_rate = int(only_digit(discount_rate)) / 100
 
             yield {
                 'url': url,
                 'id': query.get('no', [None])[0],
-                'image_url': response.urljoin(self.extract_with_css(product, 'span.goodsDisplayImageWrap img::attr(src)')),
-                'name': self.extract_with_css(product, 'p.proTitle a::text'),
+                'image_url': response.urljoin(extract_with_css(product, 'span.goodsDisplayImageWrap img::attr(src)')),
+                'name': extract_with_css(product, 'p.proTitle a::text'),
                 'price': price,
                 'discount_rate': discount_rate,
             }
-
-    def url_of(self, code):
-        return '{list_url}?{query}'.format(
-            list_url='http://www.thirtymall.com/goods/catalog',
-            query=urlencode({
-                'code': code,
-                'perpage': 100,
-            })
-        )

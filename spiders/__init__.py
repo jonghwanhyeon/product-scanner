@@ -1,10 +1,13 @@
 import logging
 import scrapy
 
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+
 class ShopSpider(scrapy.Spider):
     name = None
     allowed_domains = []
 
+    start_url = None
     parameters = []
 
     def __init__(self, *args, **kwargs):
@@ -12,27 +15,31 @@ class ShopSpider(scrapy.Spider):
         self.logger.setLevel(logging.INFO)
 
     def start_requests(self):
-        arguments = {}
-        for name in self.parameters:
-            arguments[name] = getattr(self, name, None)
-            if arguments[name] is None:
-                raise ValueError('no `{name}`'.format(name=name))
-
-        url = self.url_of(**arguments)
+        parameters = self.load_parameters()
+        url = self.start_url_of(parameters)
 
         self.logger.info('Starting request: {url}'.format(url=url))
         yield scrapy.Request(url, self.parse)
 
-    def url_of(self, parameters):
-        raise NotImplementedError()
+    def load_parameters(self):
+        arguments = {}
+        for name in self.parameters:
+            value = getattr(self, name, None)
+            if value is None:
+                raise ValueError('no `{name}`'.format(name=name))
 
-    def extract_with_css(self, element, selector):
-        text = element.css(selector).extract_first()
-        return text.strip() if text else None
+            arguments[name] = value
 
-    def extract_with_xpath(self, element, path):
-        text = element.xpath(path).extract_first()
-        return text.strip() if text else None
+        return arguments
+
+    def start_url_of(self, parameters):
+        components = list(urlparse(self.start_url))
+        query = parse_qs(components[4]) # 4: query
+
+        merged_query = dict(query, **parameters)
+        components[4] = urlencode(merged_query, doseq=True) # 4: query
+
+        return urlunparse(components)
 
 from .imbak import ImbakSpider
 from .thirtymall import ThirtyMallSpider

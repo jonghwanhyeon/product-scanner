@@ -1,12 +1,15 @@
 import re
 
-from urllib.parse import parse_qs, urlencode, urlparse
+from urllib.parse import parse_qs, urlparse
+
 from . import ShopSpider
+from utils import extract_with_css, only_digit
 
 class CheesePartySpider(ShopSpider):
     name = 'cheeseparty'
     allowed_domains = ['cheeseparty.co.kr']
 
+    start_url = 'http://cheeseparty.co.kr/product/list.html'
     parameters = ['cate_no']
 
     def parse(self, response):
@@ -27,7 +30,7 @@ class CheesePartySpider(ShopSpider):
             if product.css('div.icon img[alt="품절"]'):
                 continue
 
-            url = response.urljoin(self.extract_with_css(product, 'p.name a::attr(href)'))
+            url = response.urljoin(extract_with_css(product, 'p.name a::attr(href)'))
             query = urlparse(url).query
 
             records = product.css('ul.xans-product > li')
@@ -37,7 +40,7 @@ class CheesePartySpider(ShopSpider):
             prices = []
             for text in product.css('ul.xans-product > li span::text').extract():
                 if re.search(r'[\d\,]+원', text):
-                    prices.append(int(re.sub(r'[^\d]', '', text)))
+                    prices.append(int(only_digit(text)))
 
             if (not prices) or (len(prices) != 2):
                 continue
@@ -47,16 +50,8 @@ class CheesePartySpider(ShopSpider):
             yield {
                 'url': url,
                 'id': parse_qs(query).get('product_no', [None])[0],
-                'image_url': response.urljoin(self.extract_with_css(product, 'img.thumb::attr(src)')),
-                'name': self.extract_with_css(product, 'p.name a > span::text'),
+                'image_url': response.urljoin(extract_with_css(product, 'img.thumb::attr(src)')),
+                'name': extract_with_css(product, 'p.name a > span::text'),
                 'price': current_price,
                 'discount_rate': (customer_price - current_price) / customer_price,
             }
-
-    def url_of(self, cate_no):
-        return '{list_url}?{query}'.format(
-            list_url='http://cheeseparty.co.kr/product/list.html',
-            query=urlencode({
-                'cate_no': cate_no,
-            })
-        )

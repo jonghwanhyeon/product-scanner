@@ -1,12 +1,15 @@
 import re
 
-from urllib.parse import parse_qs, urlencode, urlparse
+from urllib.parse import parse_qs, urlparse
+
 from . import ShopSpider
+from utils import extract_with_css, only_digit
 
 class CheeseQueenSpider(ShopSpider):
     name = 'cheesequeen'
     allowed_domains = ['cheesequeen.co.kr']
 
+    start_url = 'http://cheesequeen.co.kr/goods/catalog?perpage=200'
     parameters = ['code']
 
     def parse(self, response):
@@ -25,33 +28,24 @@ class CheeseQueenSpider(ShopSpider):
             if rows[11].css('img'): # out of stock
                 continue
 
-            url = response.urljoin(self.extract_with_css(product, 'a::attr(href)'))
+            url = response.urljoin(extract_with_css(product, 'a::attr(href)'))
             query = parse_qs(urlparse(url).query)
 
-            customer_price = self.extract_with_css(rows[6], 'span::text')
+            customer_price = extract_with_css(rows[6], 'span::text')
             if not customer_price:
                 continue
-            customer_price = int(re.sub(r'[^\d]', '', customer_price))
+            customer_price = int(only_digit(customer_price))
 
-            current_price = self.extract_with_css(rows[8], 'span::text')
+            current_price = extract_with_css(rows[8], 'span::text')
             if not current_price:
                 continue
-            current_price = int(re.sub(r'[^\d]', '', current_price))
+            current_price = int(only_digit(current_price))
 
             yield {
                 'url': url,
                 'id': query.get('no', [None])[0],
-                'image_url': response.urljoin(self.extract_with_css(product, 'span.goodsDisplayImageWrap img::attr(src)')),
-                'name': self.extract_with_css(rows[2], 'span::text'),
+                'image_url': response.urljoin(extract_with_css(product, 'span.goodsDisplayImageWrap img::attr(src)')),
+                'name': extract_with_css(rows[2], 'span::text'),
                 'price': current_price,
                 'discount_rate': current_price / customer_price,
             }
-
-    def url_of(self, code):
-        return '{list_url}?{query}'.format(
-            list_url='http://cheesequeen.co.kr/goods/catalog',
-            query=urlencode({
-                'code': code,
-                'perpage': 200,
-            })
-        )
