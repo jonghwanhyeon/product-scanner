@@ -62,25 +62,14 @@ class SearchKeywordPipeline:
         return item
 
     def notify(self, item, keyword):
-        title = '{keyword} - ₩{price:,} (-{discount_rate:.0f}%)'.format(
-            keyword=keyword,
-            price=item['price'],
-            discount_rate=item['discount_rate'] * 100
-        )
-
-        parameters = {
-            'title': '{keyword} - ₩{price:,} (-{discount_rate:.0f}%)'.format(
+        notification.send(
+            title='{keyword} - ₩{price:,} (-{discount_rate:.0f}%)'.format(
                 keyword=keyword,
                 price=item['price'],
                 discount_rate=item['discount_rate'] * 100
             ),
-            'message': item['name'],
-            'url': item['url'],
-        }
-
-        response = requests.get(item['image_url'])
-        if response.status_code == 200:
-            parameters['attachment'] = response.content
-
-        notification.send(**config.pushover, **parameters)
+            message=item['name'],
+            url=item['url'],
+            image_url=item['image_url']
+        )
         self.logger.info('Notification sent: {message}'.format(message=item['name']))

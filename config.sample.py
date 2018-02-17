@@ -1,6 +1,8 @@
-pushover = {
-    'user': '',
-    'token': '',
+notification = {
+    'pushover': {
+        'user': '',
+        'token': '',
+    },
 }
 
 crawler = {

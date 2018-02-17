@@ -1,7 +1,7 @@
 import logging
 import scrapy
 
-from . import config, notification
+from . import notification
 
 class NotifyExceptionExtension:
     def __init__(self):
@@ -16,10 +16,8 @@ class NotifyExceptionExtension:
         return instance
 
     def spider_error(self, failure, response, spider):
-        parameters = {
-            'title': '[{name}] An error occurred'.format(name=spider.name.upper()),
-            'message': failure.getErrorMessage(),
-        }
-
-        notification.send(**config.pushover, **parameters)
+        notification.send(
+            title='[{name}] An error occurred'.format(name=spider.name.upper()),
+            message=failure.getErrorMessage(),
+        )
         self.logger.info('Notification sent: {message}'.format(message=parameters['title']))

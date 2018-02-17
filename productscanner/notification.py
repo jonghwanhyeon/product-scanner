@@ -2,17 +2,26 @@ import requests
 
 from retrying import retry
 
-pushover_url = 'https://api.pushover.net/1/messages.json'
+from . import config
 
 @retry(stop_max_attempt_number=3, wait_random_min=1000, wait_random_max=5000)
-def send(user, token, **kwargs):
-    parameters = dict(kwargs, user=user, token=token)
-    files = None
+def send(title, message, url, image_url=None):
+    for name, authentication in config.notification.items():
+        handler = globals().get('handle_{name}'.format(name=name), lambda *args, **kwargs: None)
+        handler(authentication, title, message, url, image_url)
 
-    if 'attachment' in parameters:
-        files = { 'attachment': ('attachment.jpg', parameters['attachment'], 'image/jpeg') }
-        del parameters['attachment']
+def handle_pushover(authentication, title, message, url, image_url=None):
+    from notification import Pushover
 
-    respoonse = requests.post(pushover_url, data=parameters, files=files)
-    if respoonse.status_code != 200:
-        raise RuntimeError('An error occurred while sending HTTP reqeust')
+    parameters = {
+        'title': title,
+        'message': message,
+        'url': url,
+    }
+
+    if image_url:
+        response = requests.get(image_url)
+        if response.status_code == 200:
+            parameters['attachment'] = response.content
+
+    Pushover(**authentication).notify(**parameters)
