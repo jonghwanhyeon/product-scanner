@@ -47,5 +47,5 @@ class CheeseQueenSpider(ShopSpider):
                 'image_url': response.urljoin(extract_with_css(product, 'span.goodsDisplayImageWrap img::attr(src)')),
                 'name': extract_with_css(rows[2], 'span::text'),
                 'price': current_price,
-                'discount_rate': current_price / customer_price,
+                'discount_rate': (customer_price - current_price) / customer_price,
             }
